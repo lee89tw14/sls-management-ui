@@ -57,13 +57,13 @@ files.forEach(filepath => {
 
     let newContent = content
         .toString()
-        .replaceAll('{{BASE_URL}}', process.env.REACT_APP_BASE_URL)
+        .replaceAll('{{BASE_URL}}', process.env.REACT_APP_BASE_URL || '')
         // Replace new port placeholders
-        .replaceAll('{{SRT_PLAYER_PORT}}', process.env.REACT_APP_SRT_PLAYER_PORT)
-        .replaceAll('{{SRT_SENDER_PORT}}', process.env.REACT_APP_SRT_SENDER_PORT)
-        .replaceAll('{{SLS_STATS_PORT}}', process.env.REACT_APP_SLS_STATS_PORT)
-        .replaceAll('{{SRTLA_PORT}}', process.env.REACT_APP_SRTLA_PORT)
-        .replaceAll('{{API_PROXY_PATH}}', process.env.REACT_APP_API_PROXY_PATH);
+        .replaceAll('{{SRT_PLAYER_PORT}}', process.env.REACT_APP_SRT_PLAYER_PORT || '')
+        .replaceAll('{{SRT_SENDER_PORT}}', process.env.REACT_APP_SRT_SENDER_PORT || '')
+        .replaceAll('{{SLS_STATS_PORT}}', process.env.REACT_APP_SLS_STATS_PORT || '')
+        .replaceAll('{{SRTLA_PORT}}', process.env.REACT_APP_SRTLA_PORT || '')
+        .replaceAll('{{API_PROXY_PATH}}', process.env.REACT_APP_API_PROXY_PATH || '');
 
     fs.writeFileSync(filepath, newContent);
 });
