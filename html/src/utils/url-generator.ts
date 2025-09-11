@@ -11,6 +11,17 @@ const getServerHostname = (): string => {
     }
 };
 
+// Check if we're accessing via FQDN (through nginx proxy)
+const isAccessingViaFqdn = (): boolean => {
+    const hostname = window.location.hostname;
+    // If hostname is an IP address or localhost, we're accessing directly
+    return !(
+        hostname === 'localhost' ||
+        hostname === '127.0.0.1' ||
+        /^(\d{1,3}\.){3}\d{1,3}$/.test(hostname)
+    );
+};
+
 // Check if a port is configured (not empty and not a placeholder)
 const isPortConfigured = (port: string): boolean => {
     return !!(port && port !== '' && !port.includes('{{'));
@@ -40,6 +51,14 @@ export const generateSrtlaPublisherUrl = (publisherId: string): string => {
 // Generate Stats URL
 export const generateStatsUrl = (playerId: string): string => {
     const hostname = getServerHostname();
+    
+    // If accessing via FQDN (nginx proxy), use the standard HTTP port without explicit port number
+    if (isAccessingViaFqdn()) {
+        const protocol = window.location.protocol; // Use same protocol as current page
+        return `${protocol}//${hostname}/stats/${playerId}?legacy=1`;
+    }
+    
+    // For direct IP access, include the port
     const port = config.slsStatsPort;
     return `http://${hostname}:${port}/stats/${playerId}?legacy=1`;
 };
