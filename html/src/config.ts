@@ -39,46 +39,61 @@ const config = (() => {
     const getDynamicApiEndpoint = () => {
         const hostInfo = getCurrentHostInfo();
         
+        // Debug logging
+        console.log('[Config] Host info:', hostInfo);
+        console.log('[Config] Environment variables:', {
+            NODE_ENV: getEnvVar('NODE_ENV'),
+            REACT_APP_BASE_URL: getEnvVar('REACT_APP_BASE_URL'),
+            REACT_APP_API_PROXY_PATH: getEnvVar('REACT_APP_API_PROXY_PATH')
+        });
+        
         // In development, use environment variable if available
         if (getEnvVar('NODE_ENV') === 'development') {
-            return getEnvVar('REACT_APP_BASE_URL', 'http://localhost:8080');
+            const devUrl = getEnvVar('REACT_APP_BASE_URL', 'http://localhost:8080');
+            console.log('[Config] Using development URL:', devUrl);
+            return devUrl;
         }
         
         // Check for explicitly configured base URL first
-        const configuredUrl = getEnvVar('REACT_APP_BASE_URL', '{{BASE_URL}}');
+        const configuredUrl = getEnvVar('REACT_APP_BASE_URL');
         if (configuredUrl && !configuredUrl.includes('{{')) {
+            console.log('[Config] Using configured URL:', configuredUrl);
             return configuredUrl;
         }
         
         // Dynamic endpoint generation based on access method
+        let finalUrl;
         if (hostInfo.isIP || hostInfo.isLocalhost) {
             // Direct IP/localhost access: use same host with stats port
-            const statsPort = getEnvVar('REACT_APP_SLS_STATS_PORT', '{{SLS_STATS_PORT}}') || '8080';
+            const statsPort = getEnvVar('REACT_APP_SLS_STATS_PORT') || '8080';
             const resolvedStatsPort = statsPort.includes('{{') ? '8080' : statsPort;
-            return `${hostInfo.protocol}//${hostInfo.hostname}:${resolvedStatsPort}`;
+            finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}:${resolvedStatsPort}`;
+            console.log('[Config] Using IP/localhost URL:', finalUrl);
         } else {
             // FQDN access: assume nginx proxy setup
-            // Check if there's a configured proxy path or use default
-            const proxyPath = getEnvVar('REACT_APP_API_PROXY_PATH', '{{API_PROXY_PATH}}');
+            // Check if there's a configured proxy path
+            const proxyPath = getEnvVar('REACT_APP_API_PROXY_PATH');
             
             if (proxyPath && !proxyPath.includes('{{')) {
                 // Use configured proxy path
-                return `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}${proxyPath}`;
+                finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}${proxyPath}`;
+                console.log('[Config] Using FQDN with proxy path:', finalUrl);
             } else {
-                // Default: assume API is proxied under /api or same origin with different port
-                // For nginx proxy, typically you'd proxy /api/* to backend:8080
-                // If no proxy path is specified, assume direct proxy to backend
-                return `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}`;
+                // Default: assume API is proxied at same origin (no proxy path)
+                finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}`;
+                console.log('[Config] Using FQDN direct proxy:', finalUrl);
             }
         }
+        
+        return finalUrl;
     };
     
     // SRT/SRTLA ports configuration
-    const SRT_PLAYER_PORT = getEnvVar('REACT_APP_SRT_PLAYER_PORT', '{{SRT_PLAYER_PORT}}');
-    const SRT_SENDER_PORT = getEnvVar('REACT_APP_SRT_SENDER_PORT', '{{SRT_SENDER_PORT}}');
-    const SLS_STATS_PORT = getEnvVar('REACT_APP_SLS_STATS_PORT', '{{SLS_STATS_PORT}}');
+    const SRT_PLAYER_PORT = getEnvVar('REACT_APP_SRT_PLAYER_PORT');
+    const SRT_SENDER_PORT = getEnvVar('REACT_APP_SRT_SENDER_PORT');
+    const SLS_STATS_PORT = getEnvVar('REACT_APP_SLS_STATS_PORT');
     // SRTLA_PORT is optional - will be empty if not configured
-    const SRTLA_PORT = getEnvVar('REACT_APP_SRTLA_PORT', '{{SRTLA_PORT}}');
+    const SRTLA_PORT = getEnvVar('REACT_APP_SRTLA_PORT');
 
     return {
         apiEndpoint: getDynamicApiEndpoint(),
