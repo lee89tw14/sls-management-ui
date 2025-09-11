@@ -38,11 +38,17 @@ runs:
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
 
-    # Determine additional tag based on branch
-    - name: Set additional tag
+    # Clean version tag and determine additional tag
+    - name: Set tags
       id: set-tag
       shell: bash
       run: |
+        # Clean the image version by replacing invalid characters
+        VERSION="${{ inputs.image-version }}"
+        # Replace slashes with hyphens and other invalid characters
+        CLEAN_VERSION=$(echo "$VERSION" | sed 's/[\/]/-/g' | sed 's/[^a-zA-Z0-9._-]//g')
+        echo "CLEAN_VERSION=$CLEAN_VERSION" >> $GITHUB_OUTPUT
+        
         # Determine branch first
         if [[ "${{ github.event_name }}" == "release" && -n "${{ github.event.release.target_commitish }}" ]]; then
           BRANCH="${{ github.event.release.target_commitish }}"
@@ -64,8 +70,8 @@ runs:
         platforms: linux/amd64,linux/arm64
         file: docker/production.Dockerfile
         tags: |
-          ${{ inputs.repository }}/${{ inputs.image-name }}:${{ inputs.image-version }}
+          ${{ inputs.repository }}/${{ inputs.image-name }}:${{ steps.set-tag.outputs.CLEAN_VERSION }}
           ${{ inputs.repository }}/${{ inputs.image-name }}:${{ steps.set-tag.outputs.TAG }}
         push: ${{ inputs.push == 'true' }}
-        cache-from: type=gha,scope=${{ inputs.image-name }}-${{ inputs.image-version }}
-        cache-to: type=gha,mode=max,scope=${{ inputs.image-name }}-${{ inputs.image-version }}
+        cache-from: type=gha,scope=${{ inputs.image-name }}-${{ steps.set-tag.outputs.CLEAN_VERSION }}
+        cache-to: type=gha,mode=max,scope=${{ inputs.image-name }}-${{ steps.set-tag.outputs.CLEAN_VERSION }}
