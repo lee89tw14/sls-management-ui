@@ -44,11 +44,6 @@ if (process.env.REACT_APP_SRTLA_PORT) {
 } else {
     console.log(`  SRTLA_PORT: (not configured)`);
 }
-if (process.env.REACT_APP_API_PROXY_PATH) {
-    console.log(`  API_PROXY_PATH: ${process.env.REACT_APP_API_PROXY_PATH}`);
-} else {
-    console.log(`  API_PROXY_PATH: (using dynamic detection)`);
-}
 
 // Replace placeholders in all files
 files.forEach(filepath => {
@@ -62,8 +57,7 @@ files.forEach(filepath => {
         .replaceAll('{{SRT_PLAYER_PORT}}', process.env.REACT_APP_SRT_PLAYER_PORT || '')
         .replaceAll('{{SRT_SENDER_PORT}}', process.env.REACT_APP_SRT_SENDER_PORT || '')
         .replaceAll('{{SLS_STATS_PORT}}', process.env.REACT_APP_SLS_STATS_PORT || '')
-        .replaceAll('{{SRTLA_PORT}}', process.env.REACT_APP_SRTLA_PORT || '')
-        .replaceAll('{{API_PROXY_PATH}}', process.env.REACT_APP_API_PROXY_PATH || '');
+        .replaceAll('{{SRTLA_PORT}}', process.env.REACT_APP_SRTLA_PORT || '');
 
     fs.writeFileSync(filepath, newContent);
 });
