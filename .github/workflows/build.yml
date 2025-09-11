@@ -1,0 +1,41 @@
+name: 'Build and Push'
+
+on:
+  push:
+    branches: [ main, feature/dynamic-backend-config ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      push_to_registry:
+        description: 'Push to container registry'
+        required: true
+        default: false
+        type: boolean
+
+env:
+  docker_repo: 'ghcr.io'
+  image_name: 'lee89tw14/sls-management-ui'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Node Build
+        uses: ./.github/actions/node-build
+        with:
+          node-version: 22
+
+      - name: Docker Build
+        uses: ./.github/actions/docker-build
+        with:
+          repository: ${{ env.docker_repo }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+          image-name: ${{ env.image_name }}
+          push: ${{ github.event_name == 'push' || github.event.inputs.push_to_registry == 'true' }}
