@@ -7,8 +7,7 @@ const ENV_VARS = {
     REACT_APP_SRT_PLAYER_PORT: process.env.REACT_APP_SRT_PLAYER_PORT || '{{SRT_PLAYER_PORT}}',
     REACT_APP_SRT_SENDER_PORT: process.env.REACT_APP_SRT_SENDER_PORT || '{{SRT_SENDER_PORT}}',
     REACT_APP_SLS_STATS_PORT: process.env.REACT_APP_SLS_STATS_PORT || '{{SLS_STATS_PORT}}',
-    REACT_APP_SRTLA_PORT: process.env.REACT_APP_SRTLA_PORT || '{{SRTLA_PORT}}',
-    REACT_APP_API_PROXY_PATH: process.env.REACT_APP_API_PROXY_PATH || '{{API_PROXY_PATH}}'
+    REACT_APP_SRTLA_PORT: process.env.REACT_APP_SRTLA_PORT || '{{SRTLA_PORT}}'
 };
 
 // Safely access environment variables
@@ -59,17 +58,8 @@ const config = (() => {
             const resolvedStatsPort = statsPort.includes('{{') ? '8080' : statsPort;
             finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}:${resolvedStatsPort}`;
         } else {
-            // FQDN access: assume nginx proxy setup
-            // Check if there's a configured proxy path
-            const proxyPath = getEnvVar('REACT_APP_API_PROXY_PATH');
-            
-            if (proxyPath && !proxyPath.includes('{{')) {
-                // Use configured proxy path
-                finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}${proxyPath}`;
-            } else {
-                // Default: assume API is proxied at same origin (no proxy path)
-                finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}`;
-            }
+            // FQDN access: assume nginx proxy setup with direct proxy
+            finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}`;
         }
         
         return finalUrl;

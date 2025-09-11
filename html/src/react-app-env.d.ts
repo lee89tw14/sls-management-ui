@@ -8,6 +8,5 @@ declare namespace NodeJS {
     REACT_APP_SRT_SENDER_PORT?: string;
     REACT_APP_SLS_STATS_PORT?: string;
     REACT_APP_SRTLA_PORT?: string;
-    REACT_APP_API_PROXY_PATH?: string;
   }
 }
