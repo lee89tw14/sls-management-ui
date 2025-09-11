@@ -39,25 +39,15 @@ const config = (() => {
     const getDynamicApiEndpoint = () => {
         const hostInfo = getCurrentHostInfo();
         
-        // Debug logging
-        console.log('[Config] Host info:', hostInfo);
-        console.log('[Config] Environment variables:', {
-            NODE_ENV: getEnvVar('NODE_ENV'),
-            REACT_APP_BASE_URL: getEnvVar('REACT_APP_BASE_URL'),
-            REACT_APP_API_PROXY_PATH: getEnvVar('REACT_APP_API_PROXY_PATH')
-        });
-        
         // In development, use environment variable if available
         if (getEnvVar('NODE_ENV') === 'development') {
             const devUrl = getEnvVar('REACT_APP_BASE_URL', 'http://localhost:8080');
-            console.log('[Config] Using development URL:', devUrl);
             return devUrl;
         }
         
         // Check for explicitly configured base URL first
         const configuredUrl = getEnvVar('REACT_APP_BASE_URL');
         if (configuredUrl && !configuredUrl.includes('{{')) {
-            console.log('[Config] Using configured URL:', configuredUrl);
             return configuredUrl;
         }
         
@@ -68,7 +58,6 @@ const config = (() => {
             const statsPort = getEnvVar('REACT_APP_SLS_STATS_PORT') || '8080';
             const resolvedStatsPort = statsPort.includes('{{') ? '8080' : statsPort;
             finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}:${resolvedStatsPort}`;
-            console.log('[Config] Using IP/localhost URL:', finalUrl);
         } else {
             // FQDN access: assume nginx proxy setup
             // Check if there's a configured proxy path
@@ -77,11 +66,9 @@ const config = (() => {
             if (proxyPath && !proxyPath.includes('{{')) {
                 // Use configured proxy path
                 finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}${proxyPath}`;
-                console.log('[Config] Using FQDN with proxy path:', finalUrl);
             } else {
                 // Default: assume API is proxied at same origin (no proxy path)
                 finalUrl = `${hostInfo.protocol}//${hostInfo.hostname}${hostInfo.port ? `:${hostInfo.port}` : ''}`;
-                console.log('[Config] Using FQDN direct proxy:', finalUrl);
             }
         }
         
