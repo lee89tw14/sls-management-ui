@@ -74,7 +74,7 @@ export const BaseInput = forwardRef<HTMLInputElement | HTMLTextAreaElement, Base
           <Form.Control
             {...inputProps}
             {...textareaProps}
-            ref={ref as any}
+            ref={ref as React.Ref<HTMLInputElement>}
           />
           {rightActions}
         </InputGroup>
@@ -82,7 +82,7 @@ export const BaseInput = forwardRef<HTMLInputElement | HTMLTextAreaElement, Base
         <Form.Control
           {...inputProps}
           {...textareaProps}
-          ref={ref as any}
+          ref={ref as React.Ref<HTMLInputElement>}
         />
       )}
       {error && (

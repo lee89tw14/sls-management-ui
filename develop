@@ -9,7 +9,7 @@ if [ $# -gt 0 ];then
         ./develop npm install
     elif [ "$1" == "install-prod" ]; then
         shift 1
-        ./develop npm install --only=prod
+        ./develop npm install --omit=dev
 
     # If "npm" is used, run npm
     # from our node container

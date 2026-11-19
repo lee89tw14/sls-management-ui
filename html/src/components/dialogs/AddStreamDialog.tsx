@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Modal, Form, Button, Alert } from 'react-bootstrap';
-import { apiService } from '../../services/api.service';
+import { apiErrorMessage, apiErrorStatus, apiService } from '../../services/api.service';
 import { useSettings } from '../../contexts/SettingsContext';
 import { StreamId } from '../../types/api.types';
 import { IdGeneratorField, TextareaField } from '../form';
@@ -76,11 +76,12 @@ export const AddStreamDialog: React.FC<AddStreamDialogProps> = ({
 
       onStreamAdded(newStreamId);
       onClose();
-    } catch (err: any) {
-      if (err.response?.status === 409) {
+    } catch (err) {
+      const serverMessage = apiErrorMessage(err);
+      if (apiErrorStatus(err) === 409) {
         setError(`Stream ID with player '${player}' already exists`);
-      } else if (err.response?.data?.message) {
-        setError(err.response.data.message);
+      } else if (serverMessage) {
+        setError(serverMessage);
       } else {
         setError('Failed to add stream ID. Please try again.');
       }

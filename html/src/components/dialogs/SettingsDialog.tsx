@@ -53,17 +53,27 @@ export const SettingsDialog: React.FC<SettingsDialogProps> = ({
         
         <Form>
           <Form.Group className="mb-3">
-            <Form.Label>Server URL</Form.Label>
-            <Form.Control
-              type="text"
-              value={config.apiEndpoint}
-              readOnly
-              disabled
-            />
+            <Form.Label>API URL</Form.Label>
+            <Form.Control type="text" value={config.apiUrl} readOnly disabled />
+            <Form.Text className="text-muted">Source: {config.apiSource}</Form.Text>
+          </Form.Group>
+
+          <Form.Group className="mb-3">
+            <Form.Label>SRT host</Form.Label>
+            <Form.Control type="text" value={config.srtHost} readOnly disabled />
             <Form.Text className="text-muted">
-              The server URL is configured at build time or via runtime configuration.
+              Source: {config.srtHostSource}. Set API_HOST, STATS_HOST and SRT_HOST (or the legacy
+              APP_URL) on the UI container to override.
             </Form.Text>
           </Form.Group>
+
+          {config.warnings.length > 0 && (
+            <Alert variant="warning" className="mb-3 small">
+              {config.warnings.map((w) => (
+                <div key={w}>{w}</div>
+              ))}
+            </Alert>
+          )}
           
           <HideField
             label="API Key"

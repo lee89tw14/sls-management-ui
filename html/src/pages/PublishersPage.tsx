@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Container, Navbar, Nav, Button, Alert, Spinner, Card } from 'react-bootstrap';
 import { useAuth } from '../contexts/AuthContext';
-import { apiService } from '../services/api.service';
+import { apiErrorStatus, apiService } from '../services/api.service';
 import { StreamId } from '../types/api.types';
 import { PublisherCard } from '../components/publisher';
 import { AddStreamDialog, SettingsDialog } from '../components/dialogs';
@@ -39,9 +39,9 @@ export const PublishersPage: React.FC = () => {
       setError(null);
       const data = await apiService.getStreamIds();
       setStreamIds(data);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error fetching stream IDs:', err);
-      if (err.response?.status === 401) {
+      if (apiErrorStatus(err) === 401) {
         setError('Authentication failed. Please check your API key in settings.');
       } else {
         setError('Failed to fetch stream IDs. Please try again.');
@@ -67,7 +67,7 @@ export const PublishersPage: React.FC = () => {
     try {
       await apiService.deleteStreamId(playerId);
       setStreamIds(streamIds.filter(s => s.player !== playerId));
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error deleting stream:', err);
       setError('Failed to delete stream. Please try again.');
     }

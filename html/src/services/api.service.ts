@@ -1,12 +1,26 @@
-import axios, { AxiosInstance } from 'axios';
+import axios, { type AxiosInstance } from 'axios';
 import { 
-  StreamId, 
-  PublisherStats, 
-  HealthStatus,
-  ApiResponse, 
-  StatsResponse 
+  type StreamId,
+  type PublisherStats,
+  type HealthStatus,
+  type ApiResponse,
+  type StatsResponse,
 } from '../types/api.types';
 import config from '../config';
+
+// HTTP status of a failed API call, if the server answered.
+export const apiErrorStatus = (error: unknown): number | undefined =>
+  axios.isAxiosError(error) ? error.response?.status : undefined;
+
+// Server-provided error message ({"status":"error","message":...}), if any.
+export const apiErrorMessage = (error: unknown): string | undefined => {
+  if (!axios.isAxiosError(error)) return undefined;
+  const data: unknown = error.response?.data;
+  if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
+    return data.message;
+  }
+  return undefined;
+};
 
 // API service class for SRT Live Server
 export class ApiService {
@@ -15,7 +29,7 @@ export class ApiService {
 
   constructor() {
     this.api = axios.create({
-      baseURL: config.apiEndpoint,
+      baseURL: config.apiUrl,
       headers: {
         'Content-Type': 'application/json',
       },

@@ -6,10 +6,13 @@ services:
     volumes:
       - ./html:/app
     environment:
-      REACT_APP_BASE_URL: "${APP_URL}"
-      REACT_APP_SRT_PLAYER_PORT: "${SRT_PLAYER_PORT:-4000}"
-      REACT_APP_SRT_SENDER_PORT: "${SRT_SENDER_PORT:-4001}"
-      REACT_APP_SLS_STATS_PORT: "${SLS_STATS_PORT:-8080}"
-      REACT_APP_SRTLA_PORT: "${SRTLA_PORT}"
+      APP_URL: "${APP_URL:-}"
+      API_HOST: "${API_HOST:-}"
+      STATS_HOST: "${STATS_HOST:-}"
+      SRT_HOST: "${SRT_HOST:-}"
+      SRT_PLAYER_PORT: "${SRT_PLAYER_PORT:-4000}"
+      SRT_SENDER_PORT: "${SRT_SENDER_PORT:-4001}"
+      SLS_STATS_PORT: "${SLS_STATS_PORT:-8080}"
+      SRTLA_PORT: "${SRTLA_PORT:-}"
     ports:
       - "3000:3000"
