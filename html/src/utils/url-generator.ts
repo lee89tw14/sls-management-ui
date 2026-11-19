@@ -12,9 +12,10 @@ export const generatePublisherUrl = (publisherId: string, cfg: ResolvedConfig = 
 export const generateSrtlaPublisherUrl = (publisherId: string, cfg: ResolvedConfig = config): string =>
   `srtla://${cfg.srtHost}:${cfg.srtlaPort}?streamid=${publisherId}`;
 
-// Generate Stats URL
-export const generateStatsUrl = (playerId: string, cfg: ResolvedConfig = config): string =>
-  `${cfg.statsUrl}/stats/${playerId}?legacy=1`;
+// Generate Stats URL. The legacy format (?legacy=1) is deprecated since SLS 1.5.2
+// and only needed by NOALBS < 2.14.
+export const generateStatsUrl = (playerId: string, cfg: ResolvedConfig = config, legacy = false): string =>
+  `${cfg.statsUrl}/stats/${playerId}${legacy ? '?legacy=1' : ''}`;
 
 // URL information for display
 export interface UrlInfo {
@@ -58,8 +59,14 @@ export const getStreamUrls = (
     {
       label: 'Statistics',
       url: generateStatsUrl(streamId.player, cfg),
-      description: 'View real-time statistics for this stream',
+      description: 'Real-time statistics. NOALBS 2.14+: stream server type "OpenIRL"',
       icon: 'bi-graph-up',
+    },
+    {
+      label: 'Statistics (legacy format)',
+      url: generateStatsUrl(streamId.player, cfg, true),
+      description: 'Only for NOALBS < 2.14 (type "SrtLiveServer"). Deprecated since SLS 1.5.2',
+      icon: 'bi-graph-down',
     },
   );
 

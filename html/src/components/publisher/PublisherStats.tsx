@@ -45,6 +45,14 @@ export const PublisherStats: React.FC<PublisherStatsProps> = ({
         label="Bitrate"
         value={formatBitrate(stats.bitrate)}
       />
+
+      {stats.throughput !== undefined && (
+        <StatItem
+          icon="bi bi-reception-4"
+          label={stats.peers?.length ? `Throughput (${stats.peers.length} links)` : 'Throughput'}
+          value={formatBitrate(stats.throughput)}
+        />
+      )}
       
       <StatItem
         icon="bi bi-clock"

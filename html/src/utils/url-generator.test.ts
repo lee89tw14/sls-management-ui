@@ -15,7 +15,8 @@ describe('getStreamUrls', () => {
     expect(byLabel['SRT Publisher']).toBe('srt://ingest.example.com:4001?streamid=live_abc');
     expect(byLabel['SRTLA Publisher']).toBe('srtla://ingest.example.com:5000?streamid=live_abc');
     expect(byLabel['SRT Player']).toBe('srt://ingest.example.com:4000?streamid=play_def');
-    expect(byLabel['Statistics']).toBe('https://stats.example.com/stats/play_def?legacy=1');
+    expect(byLabel['Statistics']).toBe('https://stats.example.com/stats/play_def');
+    expect(byLabel['Statistics (legacy format)']).toBe('https://stats.example.com/stats/play_def?legacy=1');
   });
 
   it('omits the SRTLA URL when SRTLA_PORT is not set', () => {

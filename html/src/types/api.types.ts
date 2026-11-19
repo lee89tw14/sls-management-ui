@@ -6,6 +6,15 @@ export interface StreamId {
   description?: string;
 }
 
+// Per-link statistics reported by srtla_rec (SLS 1.5.2+, SRTLA publishers only)
+export interface SrtlaPeerStats {
+  connection_id: string;
+  bitrate: number;
+  throughput: number;
+  jitter: number;
+  uptime: number;
+}
+
 export interface PublisherStats {
   bitrate: number;
   buffer: number;
@@ -13,6 +22,9 @@ export interface PublisherStats {
   latency: number;
   rtt: number;
   uptime: number;
+  // SLS 1.5.2+: received network rate incl. retransmissions, in kbps
+  throughput?: number;
+  peers?: SrtlaPeerStats[];
 }
 
 export interface HealthStatus {
