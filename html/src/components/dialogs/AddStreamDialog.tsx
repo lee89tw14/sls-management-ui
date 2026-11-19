@@ -4,7 +4,7 @@ import { apiService } from '../../services/api.service';
 import { useSettings } from '../../contexts/SettingsContext';
 import { StreamId } from '../../types/api.types';
 import { IdGeneratorField, TextareaField } from '../form';
-import { generateUUID, generateDefaultStreamIds } from '../../utils/uuid';
+import { generateDefaultStreamIds, generatePlayerId, generatePublisherId } from '../../utils/uuid';
 
 // Props for AddStreamDialog component
 interface AddStreamDialogProps {
@@ -38,8 +38,7 @@ export const AddStreamDialog: React.FC<AddStreamDialogProps> = ({
     } else if (prefillPublisher) {
       setPublisher(prefillPublisher);
       // Generate only player ID when publisher is prefilled
-      const uuid = generateUUID().replace(/-/g, '');
-      setPlayer(`play_${uuid}`);
+      setPlayer(generatePlayerId());
     } else {
       // Generate both IDs for new stream
       const { publisherId, playerId } = generateDefaultStreamIds();
@@ -93,15 +92,13 @@ export const AddStreamDialog: React.FC<AddStreamDialogProps> = ({
   // Regenerate Publisher ID
   const handleRegeneratePublisher = () => {
     if (!prefillPublisher) {
-      const uuid = generateUUID().replace(/-/g, '');
-      setPublisher(`live_${uuid}`);
+      setPublisher(generatePublisherId());
     }
   };
 
   // Regenerate Player ID
   const handleRegeneratePlayer = () => {
-    const uuid = generateUUID().replace(/-/g, '');
-    setPlayer(`play_${uuid}`);
+    setPlayer(generatePlayerId());
   };
 
   // Check if IDs are identical (for real-time validation)
