@@ -1,0 +1,23 @@
+name: 'CI'
+
+on:
+  push:
+    branches: [ '**' ]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Node Build
+        uses: ./.github/actions/node-build
+        with:
+          node-version: 22
+
+      - name: Docker Build (no push)
+        run: docker build -f docker/production.Dockerfile -t sls-management-ui:ci .

@@ -6,7 +6,6 @@ on:
 
 env:
   docker_repo: 'ghcr.io'
-  image_name: 'openirl/sls-management-ui'
 
 jobs:
   release:
@@ -15,7 +14,13 @@ jobs:
       packages: write
       contents: read
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v7
+
+      # ghcr.io/<owner>/<repo>, lower-cased: works for upstream and for forks.
+      - name: Image name
+        id: image
+        shell: bash
+        run: echo "name=${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
 
       - name: Node Build
         uses: ./.github/actions/node-build
@@ -28,5 +33,5 @@ jobs:
           repository: ${{ env.docker_repo }}
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          image-name: ${{ env.image_name }}
+          image-name: ${{ steps.image.outputs.name }}
           push: true
