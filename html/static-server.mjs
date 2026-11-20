@@ -1,9 +1,3 @@
-// Minimal static file server for the production image.
-//
-// Serves the Vite build read-only and answers /config.js from memory, so the
-// container needs no writable filesystem (works with `--read-only` and any
-// `--user`). Hashed /assets/* files are cached long-term; everything else is
-// revalidated on each load.
 import { createServer } from 'node:http';
 import { createReadStream, statSync } from 'node:fs';
 import { extname, join, normalize, sep } from 'node:path';
@@ -24,10 +18,8 @@ const MIME = {
 };
 
 /**
- * Map a request path to a regular file below root, or null.
- * Rejects traversal, NUL bytes, malformed escapes and dot-files.
- * @param {string} root absolute directory
- * @param {string} urlPath path part of the request URL
+ * @param {string} root
+ * @param {string} urlPath
  * @returns {string | null}
  */
 export function resolveStaticFile(root, urlPath) {

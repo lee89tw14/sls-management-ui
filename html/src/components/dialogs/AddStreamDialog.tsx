@@ -4,8 +4,12 @@ import { apiErrorMessage, apiErrorStatus, apiService } from '../../services/api.
 import { useSettings } from '../../contexts/SettingsContext';
 import { StreamId } from '../../types/api.types';
 import { IdGeneratorField, TextareaField } from '../form';
-import { generateDefaultStreamIds, generatePlayerId, generatePublisherId } from '../../utils/uuid';
-import { isValidStreamId } from '../../utils/stream-id';
+import {
+  generateDefaultStreamIds,
+  generatePlayerId,
+  generatePublisherId,
+  isValidStreamId,
+} from '../../utils/stream-id';
 
 // Props for AddStreamDialog component
 interface AddStreamDialogProps {
@@ -63,9 +67,9 @@ export const AddStreamDialog: React.FC<AddStreamDialogProps> = ({
       return;
     }
 
-    // Only check the publisher when it is new; an existing one is kept as stored.
+    const isNewPublisher = !prefillPublisher;
     const invalid = [
-      ...(prefillPublisher ? [] : [['Publisher', publisher.trim()]]),
+      ...(isNewPublisher ? [['Publisher', publisher.trim()]] : []),
       ['Player', player.trim()],
     ].filter(([, id]) => !isValidStreamId(id));
     if (invalid.length > 0) {

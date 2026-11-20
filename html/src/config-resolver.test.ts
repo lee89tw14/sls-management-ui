@@ -20,10 +20,6 @@ describe('toBaseUrl', () => {
     expect(toBaseUrl('http://10.0.0.5:8080/sls/', '8080')).toBe('http://10.0.0.5:8080/sls');
     expect(toBaseUrl('http://[fd00::5]:8080', '8080')).toBe('http://[fd00::5]:8080');
   });
-  it('strips one pair of surrounding quotes', () => {
-    expect(toBaseUrl('"http://10.0.0.5:8080"', '8080')).toBe('http://10.0.0.5:8080');
-    expect(toBaseUrl("'10.0.0.5'", '8080')).toBe('http://10.0.0.5:8080');
-  });
   it('rejects values that are not a host or http(s) URL', () => {
     for (const bad of [
       '',
@@ -40,6 +36,7 @@ describe('toBaseUrl', () => {
       'host#frag',
       'host name',
       '"unbalanced',
+      '"http://10.0.0.5:8080"',
       'host:99999',
     ]) {
       expect(toBaseUrl(bad, '8080'), bad).toBeNull();
@@ -91,7 +88,7 @@ describe('resolveConfig: auto detection', () => {
 
   it('applies default ports and hides SRTLA when unset', () => {
     const c = resolveConfig({}, page('http://10.0.0.1:3000/'));
-    expect([c.srtPlayerPort, c.srtSenderPort, c.slsStatsPort, c.srtlaPort]).toEqual(['4000', '4001', '8080', '']);
+    expect([c.srtPlayerPort, c.srtSenderPort, c.slsStatsPort, c.srtlaPort]).toEqual(['4000', '4001', '8080', null]);
   });
 });
 
@@ -149,7 +146,7 @@ describe('resolveConfig: invalid input', () => {
   it('ignores invalid ports with a warning', () => {
     const c = resolveConfig({ srtPlayerPort: 'abc', srtlaPort: '70000' }, page('http://10.0.0.1:3000/'));
     expect(c.srtPlayerPort).toBe('4000');
-    expect(c.srtlaPort).toBe('');
+    expect(c.srtlaPort).toBeNull();
     expect(c.warnings).toHaveLength(2);
   });
 
@@ -162,12 +159,9 @@ describe('resolveConfig: invalid input', () => {
   });
 
   it('accepts non-string values from a hand-written config.js', () => {
-    const c = resolveConfig(
-      { slsStatsPort: 9090, srtlaPort: null, appUrl: undefined } as unknown as Record<string, unknown>,
-      page('http://10.0.0.1:3000/'),
-    );
+    const c = resolveConfig({ slsStatsPort: 9090, srtlaPort: null, appUrl: undefined }, page('http://10.0.0.1:3000/'));
     expect(c.slsStatsPort).toBe('9090');
-    expect(c.srtlaPort).toBe('');
+    expect(c.srtlaPort).toBeNull();
   });
 
   it('warns about mixed content', () => {

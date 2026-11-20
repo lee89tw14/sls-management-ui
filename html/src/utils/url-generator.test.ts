@@ -1,8 +1,13 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { resolveConfig, type PageLocation } from '../config-resolver';
 import { generatePublisherUrl, generateStatsUrl, getStreamUrls } from './url-generator';
-import { encodeStreamIdForPath, encodeStreamIdForQuery, isValidStreamId } from './stream-id';
-import { generateDefaultStreamIds, randomHex } from './uuid';
+import {
+  encodeStreamIdForPath,
+  encodeStreamIdForQuery,
+  generateDefaultStreamIds,
+  isValidStreamId,
+  randomHex,
+} from './stream-id';
 
 const ids = { publisher: 'live_abc', player: 'play_def' };
 const lanPage: PageLocation = { protocol: 'http:', hostname: '10.0.0.1', port: '3000', origin: 'http://10.0.0.1:3000' };

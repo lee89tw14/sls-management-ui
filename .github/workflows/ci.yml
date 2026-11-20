@@ -5,7 +5,6 @@ on:
     branches: [ '**' ]
   pull_request:
   schedule:
-    # Weekly dependency audit, so new advisories show up without a push.
     - cron: '17 3 * * 1'
 
 permissions:
@@ -13,7 +12,6 @@ permissions:
 
 jobs:
   build:
-    # Same-repository PRs are already covered by the push event.
     if: >-
       github.event_name == 'push' ||
       (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
@@ -29,7 +27,6 @@ jobs:
       - name: Docker Build (no push)
         run: docker build -f docker/production.Dockerfile -t sls-management-ui:ci .
 
-      # Run the image the strict way: read-only root fs and an arbitrary uid.
       - name: Smoke test image
         run: |
           docker run -d --name ui --read-only --user 1234:1234 -p 3000:3000 \
@@ -44,8 +41,6 @@ jobs:
           docker stop -t 5 ui
           test "$(docker inspect -f '{{.State.ExitCode}}' ui)" = 0
 
-  # Separate job: a newly published advisory turns this red without blocking
-  # builds and releases.
   audit:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest

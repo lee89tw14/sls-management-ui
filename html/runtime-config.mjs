@@ -1,22 +1,9 @@
-// Runtime configuration for the browser bundle.
-//
-// The production image serves a static build. Deployment-specific values are not
-// baked into the bundle; instead run.mjs builds /config.js at container start
-// (window.__SLS_CONFIG__) from environment variables and serves it from memory,
-// and the Vite dev/preview servers serve the same file from their environment.
-// The bundle itself is never modified, and values are JSON-encoded instead of
-// spliced into JavaScript.
-//
-// Canonical variable names are unprefixed. The REACT_APP_* names are still read
-// so existing compose files (e.g. srtla-receiver's docker-compose.prod.yml) keep
-// working.
-
 /**
  * @typedef {Object} RawRuntimeConfig
- * @property {string} appUrl        Legacy all-in-one base URL (APP_URL).
- * @property {string} apiHost       Base URL the browser uses for /api, /health, /stats.
- * @property {string} statsHost     Base URL shown in the statistics links (e.g. for NOALBS).
- * @property {string} srtHost       Host name used in srt:// and srtla:// URLs.
+ * @property {string} appUrl
+ * @property {string} apiHost
+ * @property {string} statsHost
+ * @property {string} srtHost
  * @property {string} srtPlayerPort
  * @property {string} srtSenderPort
  * @property {string} slsStatsPort
@@ -36,7 +23,7 @@ export const RUNTIME_ENV_KEYS = {
 };
 
 /**
- * Trim and remove one pair of matching surrounding quotes. `docker run --env-file`
+ * `docker run --env-file`
  * passes `API_HOST="http://..."` with the quotes included.
  * @param {string} value
  * @returns {string}
@@ -50,7 +37,6 @@ export function cleanEnvValue(value) {
 }
 
 /**
- * Pick the first non-empty value for every runtime key. Unset keys become ''.
  * @param {Record<string, string | undefined>} env
  * @returns {RawRuntimeConfig}
  */
@@ -65,8 +51,6 @@ export function readRuntimeConfig(env) {
 }
 
 /**
- * Render the config as a classic script. JSON encoding keeps operator-supplied
- * values from breaking out of the string literal.
  * @param {RawRuntimeConfig} cfg
  * @returns {string}
  */

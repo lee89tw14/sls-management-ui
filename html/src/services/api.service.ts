@@ -5,23 +5,16 @@ import {
   type HealthStatus,
   type ApiResponse,
   type StatsResponse,
+  type ApiError,
 } from '../types/api.types';
 import config from '../config';
 import { encodeStreamIdForPath } from '../utils/stream-id';
 
-// HTTP status of a failed API call, if the server answered.
 export const apiErrorStatus = (error: unknown): number | undefined =>
   axios.isAxiosError(error) ? error.response?.status : undefined;
 
-// Server-provided error message ({"status":"error","message":...}), if any.
-export const apiErrorMessage = (error: unknown): string | undefined => {
-  if (!axios.isAxiosError(error)) return undefined;
-  const data: unknown = error.response?.data;
-  if (data && typeof data === 'object' && 'message' in data && typeof data.message === 'string') {
-    return data.message;
-  }
-  return undefined;
-};
+export const apiErrorMessage = (error: unknown): string | undefined =>
+  axios.isAxiosError<ApiError>(error) ? error.response?.data?.message : undefined;
 
 // API service class for SRT Live Server
 export class ApiService {

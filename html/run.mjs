@@ -1,7 +1,4 @@
 #!/usr/bin/env node
-// Container entrypoint: build the runtime config from the environment and serve
-// the static bundle. Nothing is written to disk, so the container also runs with
-// `--read-only` and an arbitrary `--user`.
 import { realpathSync } from 'node:fs';
 import { readRuntimeConfig, renderConfigScript } from './runtime-config.mjs';
 import { createStaticServer } from './static-server.mjs';

@@ -1,5 +1,3 @@
-// Resolved runtime configuration for the running page.
-// Resolution rules live in config-resolver.ts (pure, unit-tested).
 import { resolveConfig, type RawConfig, type ResolvedConfig } from './config-resolver';
 
 export * from './config-resolver';

@@ -1,30 +1,3 @@
-// Runtime configuration.
-//
-// Raw values come from /config.js (window.__SLS_CONFIG__), which the container
-// generates at start-up from environment variables (see runtime-config.mjs).
-// resolveConfig() turns them into the three addresses the UI needs:
-//
-//   apiUrl    where the browser sends /api, /health and /stats requests
-//             API_HOST -> APP_URL -> auto
-//   statsUrl  base of the statistics links shown to the user (e.g. for NOALBS)
-//             STATS_HOST -> API_HOST -> APP_URL -> auto
-//   srtHost   host name inside srt:// and srtla:// URLs (must reach UDP ports)
-//             SRT_HOST -> host of APP_URL -> host of the page
-//
-// "auto" derives the API address from the page URL:
-//   - plain-http page on an IP literal, localhost, or an explicit port
-//     (http://192.168.1.10:3000, http://box.tailnet.ts.net:3000):
-//     talk to the SLS API directly on http://<host>:SLS_STATS_PORT.
-//   - anything else, including every https page: assume a reverse proxy / tunnel
-//     that forwards /api, /health and /stats on the same origin. (SLS itself
-//     only speaks plain HTTP, so an https page can never call it directly.)
-//
-// A host value may be a full http(s) URL (https://api.example.com,
-// http://10.0.0.5:8080/sls) or a bare host (10.0.0.5, api.example.com:8080).
-// Bare hosts get http:// and, if they have no port, SLS_STATS_PORT.
-// Anything else (garbage, quotes, user info, query strings) is rejected with a
-// warning instead of being turned into a surprising URL.
-
 export interface RawConfig {
   appUrl: string;
   apiHost: string;
@@ -62,8 +35,7 @@ export interface ResolvedConfig {
   srtPlayerPort: string;
   srtSenderPort: string;
   slsStatsPort: string;
-  /** Empty when SRTLA is not configured. */
-  srtlaPort: string;
+  srtlaPort: string | null;
   warnings: string[];
 }
 
@@ -85,6 +57,7 @@ const DEFAULT_PORTS = { srtPlayerPort: '4000', srtSenderPort: '4001', slsStatsPo
 const SCHEME = /^([a-z][a-z0-9+.-]*):\/\/(.*)$/i;
 const AUTHORITY = /^(\[[0-9a-f:.]+\]|[a-z0-9-]+(?:\.[a-z0-9-]+)*)(?::(\d{1,5}))?$/i;
 const PATH = /^(?:\/[a-z0-9._~!$&'()*+,;=:@%-]*)*$/i;
+const DIGITS_AND_DOTS = /^[\d.]+$/;
 const DNS_LABEL = /^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/i;
 
 const validPort = (value: string): boolean => /^\d{1,5}$/.test(value) && +value >= 1 && +value <= 65535;
@@ -103,8 +76,7 @@ const isValidHost = (host: string): boolean => {
       return false;
     }
   }
-  // All-numeric names must be a complete dotted IPv4 address ("8080" is not a host).
-  if (/^[\d.]+$/.test(host)) return isIpv4(host);
+  if (DIGITS_AND_DOTS.test(host)) return isIpv4(host);
   return host.split('.').every((label) => DNS_LABEL.test(label));
 };
 
@@ -113,14 +85,8 @@ const isIpLiteral = (hostname: string): boolean => isIpv4(hostname) || hostname.
 const isLocalhost = (hostname: string): boolean =>
   hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
 
-/** Remove one pair of matching surrounding quotes (docker --env-file keeps them). */
-export const stripQuotes = (value: string): string => {
-  const v = value.trim();
-  if (v.length >= 2 && (v[0] === '"' || v[0] === "'") && v[v.length - 1] === v[0]) {
-    return v.slice(1, -1).trim();
-  }
-  return v;
-};
+const canReachSlsDirectly = (page: PageLocation): boolean =>
+  page.protocol !== 'https:' && (page.port !== '' || isIpLiteral(page.hostname) || isLocalhost(page.hostname));
 
 interface HostSetting {
   scheme: string | null;
@@ -129,9 +95,8 @@ interface HostSetting {
   path: string;
 }
 
-/** Strictly parse "scheme://host[:port][/path]" or "host[:port][/path]". */
 export const parseHostSetting = (value: string): HostSetting | null => {
-  const input = stripQuotes(value);
+  const input = value.trim();
   if (!input) return null;
   const m = SCHEME.exec(input);
   const scheme = m ? m[1].toLowerCase() : null;
@@ -147,32 +112,24 @@ export const parseHostSetting = (value: string): HostSetting | null => {
   return { scheme, host: a[1].toLowerCase(), port, path: path.replace(/\/+$/, '') };
 };
 
-/**
- * Normalise an API/stats host setting to a base URL without trailing slash.
- * Returns null for empty or invalid input.
- */
 export const toBaseUrl = (value: string, defaultPort: string): string | null => {
   const s = parseHostSetting(value);
   if (!s) return null;
   if (s.scheme !== null && s.scheme !== 'http' && s.scheme !== 'https') return null;
   const scheme = s.scheme ?? 'http';
-  // Bare hosts without a port get the SLS port; an explicit port (even :80) is kept.
   const port = s.port || (s.scheme === null ? defaultPort : '');
   const url = new URL(`${scheme}://${s.host}${port ? `:${port}` : ''}`);
   return `${url.origin}${s.path}`;
 };
 
-/** Host (and port, if any) of a host setting with any scheme, or null. */
 export const hostOf = (value: string): { host: string; port: string } | null => {
   const s = parseHostSetting(value);
   return s ? { host: s.host, port: s.port } : null;
 };
 
 export const resolveConfig = (raw: Partial<Record<keyof RawConfig, unknown>>, page: PageLocation): ResolvedConfig => {
-  // Values may come from a hand-written config.js; never trust their type.
-  const cfg = Object.fromEntries(
-    RAW_KEYS.map((k) => [k, stripQuotes(String(raw[k] ?? ''))]),
-  ) as unknown as RawConfig;
+  const cfg: RawConfig = { ...EMPTY_RAW_CONFIG };
+  for (const key of RAW_KEYS) cfg[key] = String(raw[key] ?? '').trim();
   const warnings: string[] = [];
 
   const port = (key: keyof typeof DEFAULT_PORTS): string => {
@@ -186,10 +143,10 @@ export const resolveConfig = (raw: Partial<Record<keyof RawConfig, unknown>>, pa
   const srtPlayerPort = port('srtPlayerPort');
   const srtSenderPort = port('srtSenderPort');
 
-  let srtlaPort = cfg.srtlaPort;
-  if (srtlaPort !== '' && !validPort(srtlaPort)) {
+  let srtlaPort: string | null = cfg.srtlaPort === '' ? null : cfg.srtlaPort;
+  if (srtlaPort !== null && !validPort(srtlaPort)) {
     warnings.push(`Ignoring invalid srtlaPort "${srtlaPort}"; SRTLA URLs are hidden.`);
-    srtlaPort = '';
+    srtlaPort = null;
   }
 
   const fromSetting = (name: 'APP_URL' | 'API_HOST' | 'STATS_HOST', value: string): string | null => {
@@ -202,10 +159,7 @@ export const resolveConfig = (raw: Partial<Record<keyof RawConfig, unknown>>, pa
   const apiHost = fromSetting('API_HOST', cfg.apiHost);
   const statsHost = fromSetting('STATS_HOST', cfg.statsHost);
 
-  const direct =
-    page.protocol !== 'https:' &&
-    (page.port !== '' || isIpLiteral(page.hostname) || isLocalhost(page.hostname));
-  const auto = direct
+  const auto = canReachSlsDirectly(page)
     ? { url: `http://${page.hostname}:${slsStatsPort}`, source: 'auto (direct)' as const }
     : { url: page.origin, source: 'auto (same origin)' as const };
 

@@ -13,11 +13,9 @@ export const generatePublisherUrl = (publisherId: string, cfg: ResolvedConfig = 
   srtUrl('srt', cfg, cfg.srtSenderPort, publisherId);
 
 // Generate SRTLA Publisher URL
-export const generateSrtlaPublisherUrl = (publisherId: string, cfg: ResolvedConfig = config): string =>
-  srtUrl('srtla', cfg, cfg.srtlaPort, publisherId);
+export const generateSrtlaPublisherUrl = (publisherId: string, srtlaPort: string, cfg: ResolvedConfig = config): string =>
+  srtUrl('srtla', cfg, srtlaPort, publisherId);
 
-// Generate Stats URL. The legacy format (?legacy=1) is deprecated since SLS 1.5.2
-// and only needed by NOALBS < 2.14.
 export const generateStatsUrl = (playerId: string, cfg: ResolvedConfig = config, legacy = false): string =>
   `${cfg.statsUrl}/stats/${encodeStreamIdForPath(playerId)}${legacy ? '?legacy=1' : ''}`;
 
@@ -44,10 +42,10 @@ export const getStreamUrls = (
   ];
 
   // Only add SRTLA URL if SRTLA port is configured
-  if (cfg.srtlaPort !== '') {
+  if (cfg.srtlaPort !== null) {
     urls.push({
       label: 'SRTLA Publisher',
-      url: generateSrtlaPublisherUrl(streamId.publisher, cfg),
+      url: generateSrtlaPublisherUrl(streamId.publisher, cfg.srtlaPort, cfg),
       description: 'Use this URL to publish your stream via SRTLA (with bonding support)',
       icon: 'bi-broadcast-pin',
     });
