@@ -130,6 +130,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push
+        id: push
         uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
         with:
           context: .
@@ -149,7 +150,13 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           VERSION: ${{ steps.plan.outputs.version }}
           PRERELEASE: ${{ steps.plan.outputs.prerelease }}
+          DIGEST: ${{ steps.push.outputs.digest }}
         run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          notes=$(printf '%s\n' \
+            '## Docker image' '' '```sh' "docker pull $image:$VERSION" '```' '' \
+            "Digest: \`$DIGEST\` (linux/amd64, linux/arm64)" '' \
+            "Built by [this workflow run]($GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID).")
           flags=()
           if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
-          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes "${flags[@]}"
+          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --notes "$notes" --generate-notes "${flags[@]}"
