@@ -6,16 +6,22 @@ on:
   pull_request:
   schedule:
     - cron: '17 3 * * 1'
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
+
 jobs:
   build:
     if: >-
-      github.event_name == 'push' ||
-      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+      github.event_name != 'pull_request' ||
+      github.event.pull_request.head.repo.full_name != github.repository
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
@@ -25,13 +31,13 @@ jobs:
           node-version: 22
 
       - name: Docker Build (no push)
-        run: docker build -f docker/production.Dockerfile -t sls-management-ui:ci .
+        run: docker build --pull -f docker/production.Dockerfile -t sls-management-ui:ci .
 
       - name: Smoke test image
         run: |
           docker run -d --name ui --read-only --user 1234:1234 -p 3000:3000 \
             -e REACT_APP_BASE_URL= -e SRT_HOST=ingest.example.com sls-management-ui:ci
-          for i in $(seq 1 20); do curl -fsS -o /dev/null http://localhost:3000/config.js && break; sleep 1; done
+          for _ in $(seq 1 20); do curl -fsS -o /dev/null http://localhost:3000/config.js && break; sleep 1; done
           curl -fsS http://localhost:3000/config.js | grep -q '"srtHost":"ingest.example.com"'
           index=$(curl -fsS http://localhost:3000/)
           echo "$index" | grep -q 'src="/config.js"'
@@ -41,9 +47,18 @@ jobs:
           docker stop -t 5 ui
           test "$(docker inspect -f '{{.State.ExitCode}}' ui)" = 0
 
+      - name: Scan image
+        uses: anchore/scan-action@27805bf3b4e84b4a5c980df22ed233c00390a439 # v7.4.2
+        with:
+          image: sls-management-ui:ci
+          only-fixed: true
+          severity-cutoff: high
+          output-format: table
+
   audit:
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     defaults:
       run:
         working-directory: html
@@ -53,3 +68,88 @@ jobs:
         with:
           node-version: 22
       - run: npm audit --audit-level=high
+
+  # Every push to main publishes :main and :sha-<commit>. When html/package.json
+  # carries a version without a git tag yet, it also publishes :<version> (and
+  # :latest unless it is a pre-release) and creates the tag and GitHub release.
+  publish:
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+      packages: write
+    concurrency:
+      group: publish
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: 'npm'
+          cache-dependency-path: html/package-lock.json
+
+      - name: Build app
+        working-directory: html
+        run: npm ci && npm run build
+
+      - name: Plan tags
+        id: plan
+        shell: bash
+        run: |
+          image="ghcr.io/${GITHUB_REPOSITORY,,}"
+          version=$(node -p "require('./html/package.json').version")
+          tags="$image:main,$image:sha-${GITHUB_SHA::7}"
+          release=false
+          prerelease=false
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$version" >/dev/null; then
+            release=true
+            tags="$tags,$image:$version"
+            case "$version" in
+              *-*) prerelease=true ;;
+              *) tags="$tags,$image:latest" ;;
+            esac
+          fi
+          {
+            echo "version=$version"
+            echo "tags=$tags"
+            echo "release=$release"
+            echo "prerelease=$prerelease"
+          } >> "$GITHUB_OUTPUT"
+          echo "Publishing $tags (release=$release, prerelease=$prerelease)"
+
+      - uses: docker/setup-qemu-action@99012661954931238ded8c8b007157a8430204e1 # v4.4.0
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: docker/production.Dockerfile
+          platforms: linux/amd64,linux/arm64
+          pull: true
+          push: true
+          tags: ${{ steps.plan.outputs.tags }}
+          provenance: mode=max
+          sbom: true
+          cache-from: type=gha,scope=publish
+          cache-to: type=gha,mode=max,scope=publish
+
+      - name: Create release
+        if: steps.plan.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          PRERELEASE: ${{ steps.plan.outputs.prerelease }}
+        run: |
+          flags=()
+          if [ "$PRERELEASE" = true ]; then flags+=(--prerelease); fi
+          gh release create "$VERSION" --target "$GITHUB_SHA" --title "$VERSION" --generate-notes "${flags[@]}"

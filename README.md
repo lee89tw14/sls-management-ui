@@ -45,3 +45,9 @@ cp .env.example .env
 The dev and preview servers answer only `localhost` and IP addresses. To open them via a host name (e.g. a Tailscale name), set `DEV_ALLOWED_HOSTS=box.tailnet.ts.net` (comma-separated; a leading dot allows subdomains).
 
 Without Docker, run the same `npm` scripts in `html/` with Node.js ≥ 22.13.
+
+## CI and releases
+
+Every push runs lint, tests, the production build, an image smoke test (`--read-only`, arbitrary uid) and an image vulnerability scan; `npm audit` runs as a separate job and weekly.
+
+A push to `main` that passes these checks publishes `ghcr.io/<owner>/<repo>:main` and `:sha-<commit>`. To release, bump `version` in `html/package.json` and merge to `main`: the version not yet tagged is published as `:<version>` plus `:latest`, and the git tag and GitHub release are created. Versions with a suffix (`0.3.0-beta.1`) become pre-releases and do not move `:latest`. Deployments should pin `:<version>`.
