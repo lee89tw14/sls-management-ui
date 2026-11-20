@@ -3,7 +3,7 @@ description: 'Install, lint, test and build the web app'
 inputs:
   node-version:
     required: true
-    description: 'Version Spec of the version to use. Examples: 22, 22.12.0, >=22.12.0.'
+    description: 'Version Spec of the version to use. Examples: 22, 22.13.0, >=22.13.0.'
   working-directory:
     default: 'html/'
     description: 'Working directory'
@@ -11,7 +11,7 @@ inputs:
 runs:
   using: composite
   steps:
-    - uses: actions/setup-node@v7
+    - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
       with:
         node-version: ${{ inputs.node-version }}
         cache: 'npm'
@@ -21,11 +21,6 @@ runs:
       shell: sh
       working-directory: ${{ inputs.working-directory }}
       run: npm ci
-
-    - name: Audit runtime dependencies
-      shell: sh
-      working-directory: ${{ inputs.working-directory }}
-      run: npm audit --omit=dev --audit-level=high
 
     - name: Lint
       shell: sh

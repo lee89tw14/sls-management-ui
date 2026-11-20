@@ -1,21 +1,25 @@
 import config, { type ResolvedConfig } from '../config';
+import { encodeStreamIdForPath, encodeStreamIdForQuery } from './stream-id';
+
+const srtUrl = (scheme: 'srt' | 'srtla', cfg: ResolvedConfig, port: string, id: string): string =>
+  `${scheme}://${cfg.srtHost}:${port}?streamid=${encodeStreamIdForQuery(id)}`;
 
 // Generate SRT Player URL
 export const generatePlayerUrl = (playerId: string, cfg: ResolvedConfig = config): string =>
-  `srt://${cfg.srtHost}:${cfg.srtPlayerPort}?streamid=${playerId}`;
+  srtUrl('srt', cfg, cfg.srtPlayerPort, playerId);
 
 // Generate SRT Publisher URL
 export const generatePublisherUrl = (publisherId: string, cfg: ResolvedConfig = config): string =>
-  `srt://${cfg.srtHost}:${cfg.srtSenderPort}?streamid=${publisherId}`;
+  srtUrl('srt', cfg, cfg.srtSenderPort, publisherId);
 
 // Generate SRTLA Publisher URL
 export const generateSrtlaPublisherUrl = (publisherId: string, cfg: ResolvedConfig = config): string =>
-  `srtla://${cfg.srtHost}:${cfg.srtlaPort}?streamid=${publisherId}`;
+  srtUrl('srtla', cfg, cfg.srtlaPort, publisherId);
 
 // Generate Stats URL. The legacy format (?legacy=1) is deprecated since SLS 1.5.2
 // and only needed by NOALBS < 2.14.
 export const generateStatsUrl = (playerId: string, cfg: ResolvedConfig = config, legacy = false): string =>
-  `${cfg.statsUrl}/stats/${playerId}${legacy ? '?legacy=1' : ''}`;
+  `${cfg.statsUrl}/stats/${encodeStreamIdForPath(playerId)}${legacy ? '?legacy=1' : ''}`;
 
 // URL information for display
 export interface UrlInfo {
@@ -57,15 +61,15 @@ export const getStreamUrls = (
       icon: 'bi-play-circle',
     },
     {
-      label: 'Statistics',
+      label: 'Statistics (NOALBS 2.14+)',
       url: generateStatsUrl(streamId.player, cfg),
-      description: 'Real-time statistics. NOALBS 2.14+: stream server type "OpenIRL"',
+      description: 'Real-time statistics. In NOALBS 2.14 or later use stream server type "OpenIRL"',
       icon: 'bi-graph-up',
     },
     {
-      label: 'Statistics (legacy format)',
+      label: 'Statistics (legacy, NOALBS < 2.14)',
       url: generateStatsUrl(streamId.player, cfg, true),
-      description: 'Only for NOALBS < 2.14 (type "SrtLiveServer"). Deprecated since SLS 1.5.2',
+      description: 'For NOALBS before 2.14 (type "SrtLiveServer"). Deprecated since SLS 1.5.2',
       icon: 'bi-graph-down',
     },
   );

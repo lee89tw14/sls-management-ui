@@ -11,5 +11,5 @@
     "checkJs": true,
     "types": ["node"]
   },
-  "include": ["vite.config.ts", "runtime-config.mjs", "run.mjs", "*.test.ts"]
+  "include": ["vite.config.ts", "runtime-config.mjs", "static-server.mjs", "run.mjs", "*.test.ts"]
 }

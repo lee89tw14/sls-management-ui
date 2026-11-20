@@ -4,15 +4,22 @@ on:
   push:
     branches: [ '**' ]
   pull_request:
+  schedule:
+    # Weekly dependency audit, so new advisories show up without a push.
+    - cron: '17 3 * * 1'
 
 permissions:
   contents: read
 
 jobs:
   build:
+    # Same-repository PRs are already covered by the push event.
+    if: >-
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: Node Build
         uses: ./.github/actions/node-build
@@ -21,3 +28,33 @@ jobs:
 
       - name: Docker Build (no push)
         run: docker build -f docker/production.Dockerfile -t sls-management-ui:ci .
+
+      # Run the image the strict way: read-only root fs and an arbitrary uid.
+      - name: Smoke test image
+        run: |
+          docker run -d --name ui --read-only --user 1234:1234 -p 3000:3000 \
+            -e REACT_APP_BASE_URL= -e SRT_HOST=ingest.example.com sls-management-ui:ci
+          for i in $(seq 1 20); do curl -fsS -o /dev/null http://localhost:3000/config.js && break; sleep 1; done
+          curl -fsS http://localhost:3000/config.js | grep -q '"srtHost":"ingest.example.com"'
+          index=$(curl -fsS http://localhost:3000/)
+          echo "$index" | grep -q 'src="/config.js"'
+          asset=$(echo "$index" | grep -o '/assets/[^"]*\.js' | head -n1)
+          curl -fsSI "http://localhost:3000$asset" | grep -qi 'cache-control: .*immutable'
+          test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3000/assets/)" = 404
+          docker stop -t 5 ui
+          test "$(docker inspect -f '{{.State.ExitCode}}' ui)" = 0
+
+  # Separate job: a newly published advisory turns this red without blocking
+  # builds and releases.
+  audit:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: html
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+      - run: npm audit --audit-level=high

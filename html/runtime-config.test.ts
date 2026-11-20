@@ -15,6 +15,12 @@ describe('readRuntimeConfig', () => {
     expect(cfg.srtlaPort).toBe('5000');
     expect(cfg.apiHost).toBe('');
   });
+
+  it('removes one pair of quotes left by docker --env-file', () => {
+    const cfg = readRuntimeConfig({ API_HOST: '"http://10.0.0.5:8080"', SRT_HOST: "'ingest.example.com'" });
+    expect(cfg.apiHost).toBe('http://10.0.0.5:8080');
+    expect(cfg.srtHost).toBe('ingest.example.com');
+  });
 });
 
 describe('renderConfigScript', () => {

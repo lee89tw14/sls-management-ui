@@ -5,6 +5,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import { StreamId } from '../../types/api.types';
 import { IdGeneratorField, TextareaField } from '../form';
 import { generateDefaultStreamIds, generatePlayerId, generatePublisherId } from '../../utils/uuid';
+import { isValidStreamId } from '../../utils/stream-id';
 
 // Props for AddStreamDialog component
 interface AddStreamDialogProps {
@@ -59,6 +60,19 @@ export const AddStreamDialog: React.FC<AddStreamDialogProps> = ({
     // Check if publisher and player are identical
     if (publisher.trim() === player.trim()) {
       setError('Publisher and Player IDs must be different');
+      return;
+    }
+
+    // Only check the publisher when it is new; an existing one is kept as stored.
+    const invalid = [
+      ...(prefillPublisher ? [] : [['Publisher', publisher.trim()]]),
+      ['Player', player.trim()],
+    ].filter(([, id]) => !isValidStreamId(id));
+    if (invalid.length > 0) {
+      setError(
+        `${invalid.map(([label]) => label).join(' and ')} ID may only contain letters, digits ` +
+          'and . _ ~ - / (max. 512 characters)',
+      );
       return;
     }
 

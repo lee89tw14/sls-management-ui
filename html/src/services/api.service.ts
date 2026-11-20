@@ -7,6 +7,7 @@ import {
   type StatsResponse,
 } from '../types/api.types';
 import config from '../config';
+import { encodeStreamIdForPath } from '../utils/stream-id';
 
 // HTTP status of a failed API call, if the server answered.
 export const apiErrorStatus = (error: unknown): number | undefined =>
@@ -68,13 +69,13 @@ export class ApiService {
 
   // Delete stream ID
   async deleteStreamId(playerId: string): Promise<void> {
-    await this.api.delete(`/api/stream-ids/${playerId}`);
+    await this.api.delete(`/api/stream-ids/${encodeStreamIdForPath(playerId)}`);
   }
 
   // Get publisher statistics - no auth required
   async getPublisherStats(playerId: string, reset: boolean = false): Promise<PublisherStats | null> {
     try {
-      const response = await this.api.get<StatsResponse>(`/stats/${playerId}`, {
+      const response = await this.api.get<StatsResponse>(`/stats/${encodeStreamIdForPath(playerId)}`, {
         params: reset ? { reset: true } : undefined,
       });
       

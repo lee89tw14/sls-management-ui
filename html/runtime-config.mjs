@@ -1,10 +1,11 @@
 // Runtime configuration for the browser bundle.
 //
 // The production image serves a static build. Deployment-specific values are not
-// baked into the bundle; instead run.mjs writes /config.js at container start
-// (window.__SLS_CONFIG__) from environment variables, and the Vite dev server
-// serves the same file from its own environment. The bundle itself is never
-// modified, and values are JSON-encoded instead of spliced into JavaScript.
+// baked into the bundle; instead run.mjs builds /config.js at container start
+// (window.__SLS_CONFIG__) from environment variables and serves it from memory,
+// and the Vite dev/preview servers serve the same file from their environment.
+// The bundle itself is never modified, and values are JSON-encoded instead of
+// spliced into JavaScript.
 //
 // Canonical variable names are unprefixed. The REACT_APP_* names are still read
 // so existing compose files (e.g. srtla-receiver's docker-compose.prod.yml) keep
@@ -35,6 +36,20 @@ export const RUNTIME_ENV_KEYS = {
 };
 
 /**
+ * Trim and remove one pair of matching surrounding quotes. `docker run --env-file`
+ * passes `API_HOST="http://..."` with the quotes included.
+ * @param {string} value
+ * @returns {string}
+ */
+export function cleanEnvValue(value) {
+  const v = value.trim();
+  if (v.length >= 2 && (v[0] === '"' || v[0] === "'") && v[v.length - 1] === v[0]) {
+    return v.slice(1, -1).trim();
+  }
+  return v;
+}
+
+/**
  * Pick the first non-empty value for every runtime key. Unset keys become ''.
  * @param {Record<string, string | undefined>} env
  * @returns {RawRuntimeConfig}
@@ -43,7 +58,7 @@ export function readRuntimeConfig(env) {
   /** @type {Record<string, string>} */
   const out = {};
   for (const [key, names] of Object.entries(RUNTIME_ENV_KEYS)) {
-    const hit = names.map((n) => (env[n] ?? '').trim()).find((v) => v !== '');
+    const hit = names.map((n) => cleanEnvValue(env[n] ?? '')).find((v) => v !== '');
     out[key] = hit ?? '';
   }
   return /** @type {RawRuntimeConfig} */ (out);
