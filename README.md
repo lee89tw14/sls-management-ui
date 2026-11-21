@@ -1,6 +1,6 @@
 # SLS Management UI
 
-Web UI for [SRT Live Server](https://github.com/OpenIRL/srt-live-server): manage publisher/player stream IDs, view live publisher statistics and copy the SRT / SRTLA / statistics URLs.
+Web UI for [SRT Live Server](https://github.com/lee89tw14/srt-live-server): manage publisher/player stream IDs, view live publisher statistics and copy the SRT / SRTLA / statistics URLs.
 
 The production image serves a static build. Deployment settings are read from environment variables when the container starts and handed to the browser as `/config.js`, so one image works for every deployment. The container writes nothing to disk and runs with `--read-only` and any `--user`.
 
